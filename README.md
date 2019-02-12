@@ -4,11 +4,12 @@ This is the code for the paper:
 
 Viegas, Felipe and Canuto, Sérgio and Gomes, Christian and Luiz, Washington and Rosa, Thierson and Ribas, Sabir and Rocha, Leonardo and Gonçalves, Marcos André. CluWords: Exploiting SemanticWord Clustering Representation for Enhanced Topic Modeling.The Twelfth ACM International Conference on Web Search and Data Mining (WSDM ’19)
 
-To run this code, you need to install :
+To run this code, you need to install/download :
 - scipy
 - numpy
 - gensim
 - sklearn
+- [FastText](https://fasttext.cc/docs/en/english-vectors.html)
 
 Once installed, setup the paths in the startup file :
 
