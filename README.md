@@ -1,4 +1,3 @@
-# cluwords
 # CluWords: Exploiting Semantic Word Clustering Representation for Enhanced Topic Modeling
 
 This is the code for the paper:
