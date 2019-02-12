@@ -9,7 +9,7 @@ To run this code, you need to install/download :
 - numpy
 - gensim
 - sklearn
-- [FastText](https://fasttext.cc/docs/en/english-vectors.html)
+- [FastText](https://fasttext.cc/docs/en/english-vectors.html) (Pre-trained Word Embedding)
 
 Once installed, setup the paths in the startup file :
 
