@@ -16,6 +16,7 @@ Once installed, setup the paths in the startup file :
 ```main.py```
 
 To run the code:
+
 ```python3 main.py```
 
 
