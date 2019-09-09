@@ -134,7 +134,7 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
                              has_class=has_class)
     print('Computing TFIDF...')
     cluwords_tfidf = cluwords.fit_transform()
-    cluwords_tfidf = csr_matrix(cluwords_tfidf)  # Convert the cluwords_tfidf array matrix to a sparse cluwords
+    # cluwords_tfidf = csr_matrix(cluwords_tfidf)  # Convert the cluwords_tfidf array matrix to a sparse cluwords
 
     start = timeit.default_timer()
     # Fit the NMF model
@@ -148,7 +148,6 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
 
     end = timeit.default_timer()
     print("NMF done in {}.".format(end - start))
-
 
     with open('{}/matrix_w.txt'.format(path_to_save_results), 'w') as f:
         w = nmf.fit_transform(cluwords_tfidf)  # matrix W = m x k
