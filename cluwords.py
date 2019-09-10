@@ -223,14 +223,15 @@ class CluwordsTFIDF:
         tf_vectorizer = CountVectorizer(max_features=self.n_words, binary=binary, vocabulary=self.vocab)
         tf = tf_vectorizer.fit_transform(self.documents)
 
-        return np.asarray(tf.toarray(), dtype=dtype)
+        # return np.asarray(tf.toarray(), dtype=dtype)
+        return tf
 
     def _cluwords_tf(self):
         start = timeit.default_timer()
         tf = self._raw_tf()
-        import pdb
-        pdb.set_trace()
-        tf = csr_matrix(tf, shape=(tf.shape[0], self.n_words), dtype=np.float32)  # test sparse matrix!
+        # import pdb
+        # pdb.set_trace()
+        # tf = csr_matrix(tf, shape=(tf.shape[0], self.n_words), dtype=np.float32)  # test sparse matrix!
 
         print('tf shape {}'.format(tf.shape))
 
@@ -243,7 +244,7 @@ class CluwordsTFIDF:
             self.hyp_aux.append(np.asarray(self.cluwords_data[w], dtype=np.float16))
 
         self.hyp_aux = np.asarray(self.hyp_aux, dtype=np.float32)
-        pdb.set_trace()
+        import pdb; pdb.set_trace()
         self.hyp_aux = csr_matrix(self.hyp_aux, shape=self.hyp_aux.shape, dtype=np.float32)  # test sparse matrix!
 
         self.cluwords_tf_idf = np.dot(tf, np.transpose(self.hyp_aux))
