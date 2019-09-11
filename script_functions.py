@@ -32,22 +32,28 @@ def print_results(model, tfidf_feature_names, cluwords_freq, cluwords_docs,
         with open('{}/result_topic_{}.txt'.format(path_to_save_results, t), 'w') as f_res:
             f_res.write('Topics {}\n'.format(t))
             topics = top_words(model, tfidf_feature_names, t)
-            f_res.write('{}\n'.format(topics))
+            f_res.write('Topics:\n')
+            for topic in topics:
+                f_res.write('{}\n'.format(topic))
 
-            coherence = Evaluation.coherence(topics, cluwords_freq, cluwords_docs)
-            f_res.write('Coherence: {} ({})\n'.format(np.round(np.mean(coherence), 4), np.round(np.std(coherence), 4)))
-            f_res.write('{}\n'.format(coherence))
+            # coherence = Evaluation.coherence(topics, cluwords_freq, cluwords_docs)
+            # f_res.write('Coherence: {} ({})\n'.format(np.round(np.mean(coherence), 4),
+                                                      # np.round(np.std(coherence), 4)))
+            # f_res.write('{}\n'.format(coherence))
 
             pmi, npmi = Evaluation.pmi(topics, cluwords_freq, cluwords_docs,
                                        sum([freq for word, freq in cluwords_freq.items()]), t)
-            f_res.write('PMI: {} ({})\n'.format(np.round(np.mean(pmi), 4), np.round(np.std(pmi), 4)))
-            f_res.write('{}\n'.format(pmi))
-            f_res.write('NPMI: {} ({})\n'.format(np.round(np.mean(npmi), 4), np.round(np.std(npmi), 4)))
-            f_res.write('{}\n'.format(npmi))
+            # f_res.write('PMI: {} ({})\n'.format(np.round(np.mean(pmi), 4), np.round(np.std(pmi), 4)))
+            # f_res.write('{}\n'.format(pmi))
+            f_res.write('NPMI:')
+            for score in npmi:
+                f_res.write('{}\n'.format(score))
 
-            w2v_l1 = Evaluation.w2v_metric(topics, t, path_to_save_model, 'l1_dist', dataset)
-            f_res.write('W2V-L1: {} ({})\n'.format(np.round(np.mean(w2v_l1), 4), np.round(np.std(w2v_l1), 4)))
-            f_res.write('{}\n'.format(w2v_l1))
+            f_res.write('avg NPMI: {} ({})\n'.format(np.round(np.mean(npmi), 4), np.round(np.std(npmi), 4)))
+
+            # w2v_l1 = Evaluation.w2v_metric(topics, t, path_to_save_model, 'l1_dist', dataset)
+            # f_res.write('W2V-L1: {} ({})\n'.format(np.round(np.mean(w2v_l1), 4), np.round(np.std(w2v_l1), 4)))
+            # f_res.write('{}\n'.format(w2v_l1))
 
             f_res.close()
 
