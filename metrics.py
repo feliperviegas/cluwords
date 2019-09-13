@@ -51,7 +51,7 @@ class Evaluation:
             cw_frequency[cw_words[_cw]] = float(tf_idf_t[_cw].getnnz(1))
             cw_docs[cw_words[_cw]] = set(tf_idf_t[_cw].nonzero()[1])
 
-        return len(cw_words), cw_words, cw_frequency, cw_docs
+        return len(cw_words), cw_frequency, cw_docs
 
     @staticmethod
     def coherence(topic, word_frequency, term_docs):

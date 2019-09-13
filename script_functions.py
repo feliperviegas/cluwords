@@ -32,6 +32,9 @@ def print_results(model, tfidf_feature_names, cluwords_freq, cluwords_docs,
         with open('{}/result_topic_{}.txt'.format(path_to_save_results, t), 'w') as f_res:
             f_res.write('Topics {}\n'.format(t))
             topics = top_words(model, tfidf_feature_names, t)
+
+            import pdb; pdb.set_trace()
+
             f_res.write('Topics:\n')
             for topic in topics:
                 f_res.write('{}\n'.format(topic))
@@ -164,20 +167,25 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
                 f.write('{} '.format(w[x][y]))
             f.write('\n')
         f.close()
-
-    tfidf_feature_names = list(cluwords.vocab_cluwords)
+        del w
+        del h
 
     # Load Cluwords representation for metrics
-    n_cluwords, cluwords_vocab, cluwords_freq, cluwords_docs = Evaluation.count_tf_idf_repr(cluwords.vocab_cluwords,
-                                                                                            cluwords_tfidf)
+    n_cluwords, cluwords_freq, cluwords_docs = Evaluation.count_tf_idf_repr(cluwords.vocab_cluwords,
+                                                                            cluwords_tfidf)
+
+    # Remove variable
+    del cluwords_tfidf
 
     # print('n_terms: {}'.format(n_cluwords))
     # print('words1: {}'.format(cluwords_vocab))
     # print('word_frequency: {}'.format(cluwords_freq))
     # print('term_docs: {}'.format(cluwords_docs))
 
+    import pdb; pdb.set_trace()
+
     print_results(model=nmf,
-                  tfidf_feature_names=tfidf_feature_names,
+                  tfidf_feature_names=list(cluwords.vocab_cluwords),
                   cluwords_freq=cluwords_freq,
                   cluwords_docs=cluwords_docs,
                   dataset=dataset,
