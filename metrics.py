@@ -42,8 +42,7 @@ class Evaluation:
 
 
     @staticmethod
-    def count_tf_idf_repr(cw_words, tf_idf):
-        tf_idf_t = tf_idf.transpose()
+    def count_tf_idf_repr(cw_words, tf_idf_t):
         cw_frequency = {}
         cw_docs = {}
 

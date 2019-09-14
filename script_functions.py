@@ -172,7 +172,7 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
 
     # Load Cluwords representation for metrics
     n_cluwords, cluwords_freq, cluwords_docs = Evaluation.count_tf_idf_repr(cluwords.vocab_cluwords,
-                                                                            cluwords_tfidf)
+                                                                            cluwords_tfidf.transpose())
 
     # Remove variable
     del cluwords_tfidf
