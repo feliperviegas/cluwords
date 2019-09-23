@@ -134,8 +134,8 @@ class Evaluation:
         n_top_words = float(n_top_words)
 
         for t in range(len(topics)):
-            topico = topics[t]
-            top_w = topico.split(' ')
+            top_w = topics[t]
+            # top_w = topico.split(' ')
 
             pmi_t = 0.0
             npmi_t = 0.0

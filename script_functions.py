@@ -1,14 +1,47 @@
-# Packages
 import os
 import pandas as pd
 import numpy as np
+from pyjarowinkler import distance
+import timeit
 from scipy.sparse import csr_matrix
 from sklearn.decomposition import NMF
-
 from cluwords import Cluwords, CluwordsTFIDF
 from metrics import Evaluation
 from embedding import CreateEmbeddingModels
-import timeit
+
+
+def get_one_hot_topics(topics, top, vocab, dataset):
+    one_hot_topics = []
+    for topic in topics:
+        topic_top = topic[:top]
+        one_hot_topic = np.zeros(len(vocab))
+        for word in topic_top:
+            index_vocab = np.argwhere(vocab == word)[0]
+            one_hot_topic[index_vocab] = 1
+
+        one_hot_topics.append(one_hot_topic)
+
+    np.savez_compressed('one_hot_topics_{}.npz'.format(dataset),
+                        one_hot=one_hot_topics)
+    return one_hot_topics
+
+
+def remove_redundant_words(topics):
+    topics_t = []
+    for topic in topics:
+        topic_t = topic.split(' ')
+        filtered_topic = []
+        insert_word = np.ones(len(topic_t))
+        for w_i in range(0, len(topic_t)-1):
+            if insert_word[w_i]:
+                filtered_topic.append(topic_t[w_i])
+                for w_j in range((w_i + 1), len(topic_t)):
+                    if distance.get_jaro_distance(topic_t[w_i], topic_t[w_j], winkler=True, scaling=0.1) > 0.75:
+                        insert_word[w_j] = 0
+
+        topics_t.append(filtered_topic)
+
+    return topics_t
 
 
 def top_words(model, feature_names, n_top_words):
@@ -30,17 +63,21 @@ def print_results(cluwords_freq, cluwords_docs, path_to_save_results, topics, n_
     for t in [5, 10, 20]:
         with open('{}/result_topic_{}.txt'.format(path_to_save_results, t), 'w') as f_res:
             f_res.write('Topics {}\n'.format(t))
-
             f_res.write('Topics:\n')
+            topics_t = []
             for topic in topics:
-                f_res.write('{}\n'.format(topic))
+                topics_t.append(topic[:t])
+                for word in topic[:t]:
+                    f_res.write('{} '.format(word))
+
+                f_res.write('\n')
 
             # coherence = Evaluation.coherence(topics, cluwords_freq, cluwords_docs)
             # f_res.write('Coherence: {} ({})\n'.format(np.round(np.mean(coherence), 4),
                                                       # np.round(np.std(coherence), 4)))
             # f_res.write('{}\n'.format(coherence))
 
-            pmi, npmi = Evaluation.pmi(topics=topics,
+            pmi, npmi = Evaluation.pmi(topics=topics_t,
                                        word_frequency=cluwords_freq,
                                        term_docs=cluwords_docs,
                                        n_docs=n_docs,
@@ -172,13 +209,14 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
     vocab_cluwords = cluwords.vocab_cluwords
     del cluwords
     #Load topics
-    topics = top_words(nmf, list(vocab_cluwords), 100)
+    topics = top_words(nmf, list(vocab_cluwords), 101)
 
     # Load Cluwords representation for metrics
     cluwords_freq, cluwords_docs, n_docs = Evaluation.count_tf_idf_repr(topics,
                                                                         vocab_cluwords,
                                                                         cluwords_tfidf.transpose())
-
+    topics = remove_redundant_words(topics)
+    one_hot_topics = get_one_hot_topics(topics, 10, np.array(vocab_cluwords), dataset)
     # Remove variable
     del cluwords_tfidf
 
@@ -187,7 +225,6 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
     # print('word_frequency: {}'.format(cluwords_freq))
     # print('term_docs: {}'.format(cluwords_docs))
 
-    print(n_docs)
     print_results(cluwords_freq=cluwords_freq,
                   cluwords_docs=cluwords_docs,
                   path_to_save_results=path_to_save_results,
