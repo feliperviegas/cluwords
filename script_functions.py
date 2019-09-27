@@ -8,6 +8,25 @@ from sklearn.decomposition import NMF
 from cluwords import Cluwords, CluwordsTFIDF
 from metrics import Evaluation
 from embedding import CreateEmbeddingModels
+from sklearn.neighbors import NearestNeighbors
+from sklearn.feature_extraction.text import CountVectorizer
+
+
+def _nearest_neighbors(X_topic, X_raw, vocab, n_topics):
+    X = _raw_tf(X_raw, vocab, binary=True)
+    neigh = NearestNeighbors(n_neighbors=n_topics, algorithm='auto', metric='cosine')
+    neigh.fit(X_topic)
+    dist, ind = neigh.kneighbors(X)
+    print(dist.shape)
+    for doc in range(0, dist.shape[0]):
+        for topic in range(0, dist.shape[1]):
+            print('{} {} {}'.format(doc, topic, 1. - dist[doc, topic]))
+
+
+def _raw_tf(documents, vocab, binary=False):
+    tf_vectorizer = CountVectorizer(max_features=len(vocab), binary=binary, vocabulary=vocab)
+    tf = tf_vectorizer.fit_transform(documents)
+    return tf
 
 
 def get_one_hot_topics(topics, top, vocab, dataset):
@@ -21,6 +40,7 @@ def get_one_hot_topics(topics, top, vocab, dataset):
 
         one_hot_topics.append(one_hot_topic)
 
+    one_hot_topics = np.array(one_hot_topics)
     np.savez_compressed('one_hot_topics_{}.npz'.format(dataset),
                         one_hot=one_hot_topics)
     return one_hot_topics
@@ -207,6 +227,7 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
         del h
 
     vocab_cluwords = cluwords.vocab_cluwords
+    documents = cluwords.documents
     del cluwords
     #Load topics
     topics = top_words(nmf, list(vocab_cluwords), 101)
@@ -215,8 +236,12 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
     cluwords_freq, cluwords_docs, n_docs = Evaluation.count_tf_idf_repr(topics,
                                                                         vocab_cluwords,
                                                                         cluwords_tfidf.transpose())
+
     topics = remove_redundant_words(topics)
+
     one_hot_topics = get_one_hot_topics(topics, 10, np.array(vocab_cluwords), dataset)
+    # _nearest_neighbors(one_hot_topics, documents, vocab_cluwords, n_components)
+
     # Remove variable
     del cluwords_tfidf
 
