@@ -12,16 +12,26 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import CountVectorizer
 
 
-def _nearest_neighbors(X_topic, X_raw, vocab, n_topics):
+def _nearest_neighbors(X_topic, X_raw, vocab, n_topics, dataset):
     X = _raw_tf(X_raw, vocab, binary=True)
     neigh = NearestNeighbors(n_neighbors=n_topics, algorithm='auto', metric='cosine')
     neigh.fit(X_topic)
     dist, ind = neigh.kneighbors(X)
-    print(dist.shape)
+    output = open('document_distribution_{}'.format(dataset), 'w')
     for doc in range(0, dist.shape[0]):
-        for topic in range(0, dist.shape[1]):
-            print('{} {} {}'.format(doc, topic, 1. - dist[doc, topic]))
+        topic_dist = np.zeros(dist.shape[1])
+        for index in range(0, dist.shape[1]):
+            topic_index = ind[index]
+            topic_dist[topic_index] = 1. - dist[doc, topic_index]
 
+        total_dist = np.sum(topic_dist)
+        output.write('{} '.format(doc))
+        for index in range(0, dist.shape[1]):
+            output.write(' {}:{}'.format(index, round(topic_dist[index]/total_dist if total_dist > 0 else .0, 4)))
+
+        output.write('\n')
+
+    return
 
 def _raw_tf(documents, vocab, binary=False):
     tf_vectorizer = CountVectorizer(max_features=len(vocab), binary=binary, vocabulary=vocab)
@@ -46,17 +56,25 @@ def get_one_hot_topics(topics, top, vocab, dataset):
     return one_hot_topics
 
 
-def remove_redundant_words(topics):
+def parse_topics(topics):
     topics_t = []
     for topic in topics:
         topic_t = topic.split(' ')
+        topics_t.append(topic_t)
+
+    return topics_t
+
+
+def remove_redundant_words(topics):
+    topics_t = []
+    for topic in topics:
         filtered_topic = []
-        insert_word = np.ones(len(topic_t))
-        for w_i in range(0, len(topic_t)-1):
+        insert_word = np.ones(len(topic))
+        for w_i in range(0, len(topic)-1):
             if insert_word[w_i]:
-                filtered_topic.append(topic_t[w_i])
-                for w_j in range((w_i + 1), len(topic_t)):
-                    if distance.get_jaro_distance(topic_t[w_i], topic_t[w_j], winkler=True, scaling=0.1) > 0.75:
+                filtered_topic.append(topic[w_i])
+                for w_j in range((w_i + 1), len(topic)):
+                    if distance.get_jaro_distance(topic[w_i], topic[w_j], winkler=True, scaling=0.1) > 0.75:
                         insert_word[w_j] = 0
 
         topics_t.append(filtered_topic)
@@ -236,11 +254,10 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
     cluwords_freq, cluwords_docs, n_docs = Evaluation.count_tf_idf_repr(topics,
                                                                         vocab_cluwords,
                                                                         cluwords_tfidf.transpose())
-
+    topics = parse_topics(topics)
+    one_hot_topics = get_one_hot_topics(topics, 101, np.array(vocab_cluwords), dataset)
+    _nearest_neighbors(one_hot_topics, documents, vocab_cluwords, n_components, dataset)
     topics = remove_redundant_words(topics)
-
-    one_hot_topics = get_one_hot_topics(topics, 10, np.array(vocab_cluwords), dataset)
-    # _nearest_neighbors(one_hot_topics, documents, vocab_cluwords, n_components)
 
     # Remove variable
     del cluwords_tfidf
