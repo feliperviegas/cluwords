@@ -1,7 +1,7 @@
 import timeit
 import warnings
-
 import numpy as np
+from scipy.sparse import csr_matrix
 from sklearn.feature_extraction.text import CountVectorizer
 
 from alfa_algorithms import AlfaKnn
@@ -206,20 +206,19 @@ class CluwordsTFIDF:
 
         print('\nComputing TF...')
         self._cluwords_tf()
-        print('\nComputing IDF...')
-        self._cluwords_idf()
+        # print('\nComputing IDF...')
+        # self._cluwords_idf()
 
-        self.cluwords_tf_idf = np.multiply(self.cluwords_tf_idf, np.transpose(self.cluwords_idf))
-
-        self._save_tf_idf_features_libsvm()
-
+        print(self.cluwords_tf_idf.shape)
+        # print (self.cluwords_idf.shape)
+        # self.cluwords_tf_idf = np.multiply(self.cluwords_tf_idf, np.transpose(self.cluwords_idf))
+        # self._save_tf_idf_features_libsvm()
         return self.cluwords_tf_idf
 
     def _raw_tf(self, binary=False, dtype=np.float32):
         tf_vectorizer = CountVectorizer(max_features=self.n_words, binary=binary, vocabulary=self.vocab)
         tf = tf_vectorizer.fit_transform(self.documents)
-
-        return np.asarray(tf.toarray(), dtype=dtype)
+        return tf
 
     def _cluwords_tf(self):
         start = timeit.default_timer()
@@ -227,26 +226,18 @@ class CluwordsTFIDF:
 
         print('tf shape {}'.format(tf.shape))
 
-        self.cluwords_tf_idf = np.zeros((self.n_documents, self.n_cluwords), dtype=np.float16)
-
+        # self.cluwords_tf_idf = np.zeros((self.n_documents, self.n_cluwords), dtype=np.float16)
         # print('{}'.format())
 
         self.hyp_aux = []
         for w in range(0, len(self.vocab_cluwords)):
             self.hyp_aux.append(np.asarray(self.cluwords_data[w], dtype=np.float16))
+
         self.hyp_aux = np.asarray(self.hyp_aux, dtype=np.float32)
+        self.hyp_aux = csr_matrix(self.hyp_aux, shape=self.hyp_aux.shape, dtype=np.float32)  # test sparse matrix!
 
         self.cluwords_tf_idf = np.dot(tf, np.transpose(self.hyp_aux))
-
-        # print('Doc')
-        # print(tf)
-
-        # print('Cluwords')
-        # for w in range(len(hyp_aux)):
-        #     print(hyp_aux[w])
-
-        # print('TF')
-        # print(self.cluwords_tf)
+        self.cluwords_tf_idf = tf.dot(self.hyp_aux.transpose())
 
         end = timeit.default_timer()
         print("Cluwords TF done in %0.3fs." % (end - start))
@@ -255,6 +246,11 @@ class CluwordsTFIDF:
         start = timeit.default_timer()
         print('Read data')
         tf = self._raw_tf(binary=True, dtype=np.float32)
+        import pdb
+        pdb.set_trace()
+        self.hyp_aux = self.hyp_aux.todense()
+        # tf = csr_matrix(tf, shape=(tf.shape[0], self.n_words), dtype=np.float32)  # test sparse matrix!
+
         end = timeit.default_timer()
         print('Time {}'.format(end - start))
         # print('Bin Doc')
@@ -262,11 +258,9 @@ class CluwordsTFIDF:
 
         start = timeit.default_timer()
         print('Dot tf and hyp_aux')
-        ### WITH ERROR ####
-        out = np.empty((tf.shape[0], self.hyp_aux.shape[1]), dtype=np.float32)
-        ######## CORRECTION #######
-        # out = np.empty((tf.shape[0], np.transpose(self.hyp_aux).shape[1]), dtype=np.float32)
-        _dot = np.dot(tf, np.transpose(self.hyp_aux), out=out)  # np.array n_documents x n_cluwords
+        _dot = np.dot(tf, np.transpose(self.hyp_aux))  # np.array n_documents x n_cluwords # Correct!
+        # pdb.set_trace()
+        # _dot = tf.dot(self.hyp_aux.transpose())  # Test sparse matrix!
         end = timeit.default_timer()
         print('Time {}'.format(end - start))
         # print('Dot matrix:')
@@ -276,6 +270,9 @@ class CluwordsTFIDF:
         print('Divide hyp_aux by itself')
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+            # pdb.set_trace()
+            # self.hyp_aux = self.hyp_aux.todense()
+            # pdb.set_trace()
             bin_hyp_aux = np.nan_to_num(np.divide(self.hyp_aux, self.hyp_aux))
         end = timeit.default_timer()
         print('Time {}'.format(end - start))
@@ -284,12 +281,23 @@ class CluwordsTFIDF:
 
         start = timeit.default_timer()
         print('Dot tf and bin hyp_aux')
-        out = np.empty((tf.shape[0], np.transpose(bin_hyp_aux).shape[1]), dtype=np.float32)
-        _dot_bin = np.dot(tf, np.transpose(bin_hyp_aux), out=out)
+        # out = np.empty((tf.shape[0], np.transpose(bin_hyp_aux).shape[1]), dtype=np.float32)
+        _dot_bin = np.dot(tf, np.transpose(bin_hyp_aux))
+        # pdb.set_trace()
+        # bin_hyp_aux = csr_matrix(bin_hyp_aux, shape=bin_hyp_aux.shape)
+        # pdb.set_trace()
+        # _dot_bin = tf.dot(bin_hyp_aux)
+
         end = timeit.default_timer()
         print('Time {}'.format(end - start))
         # print('Count Dot')
         # print(_dot_bin)
+
+        # pdb.set_trace()
+        # _dot = _dot.todense()
+        # pdb.set_trace()
+        # _dot_bin = _dot_bin.todense()
+        # pdb.set_trace()
 
         start = timeit.default_timer()
         print('Divide _dot and _dot_bin')
