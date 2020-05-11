@@ -110,7 +110,7 @@ def print_results(cluwords_freq, cluwords_docs, path_to_save_results, topics, n_
 
                 f_res.write('\n')
 
-            # coherence = Evaluation.coherence(topics, cluwords_freq, cluwords_docs)
+            # coherence = Evaluation.coherence(topics_t, cluwords_freq, cluwords_docs)
             # f_res.write('Coherence: {} ({})\n'.format(np.round(np.mean(coherence), 4),
                                                       # np.round(np.std(coherence), 4)))
             # f_res.write('{}\n'.format(coherence))
