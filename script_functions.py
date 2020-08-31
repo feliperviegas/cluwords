@@ -1,15 +1,17 @@
 import os
+import timeit
 import pandas as pd
 import numpy as np
+from metrics import Evaluation
 from pyjarowinkler import distance
-import timeit
 from scipy.sparse import csr_matrix
 from sklearn.decomposition import NMF
-from cluwords import Cluwords, CluwordsTFIDF
-from metrics import Evaluation
-from embedding import CreateEmbeddingModels
+from timeit import default_timer as timer
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import CountVectorizer
+from cluwordstfidf import Cluwords
+from cluwordstfidf import CluwordsTFIDF
+from embedding import CreateEmbeddingModels
 
 
 def _nearest_neighbors(X_topic, X_raw, vocab, n_topics, dataset):
@@ -32,6 +34,7 @@ def _nearest_neighbors(X_topic, X_raw, vocab, n_topics, dataset):
         output.write('\n')
 
     return
+
 
 def _raw_tf(documents, vocab, binary=False):
     tf_vectorizer = CountVectorizer(max_features=len(vocab), binary=binary, vocabulary=vocab)
@@ -177,53 +180,70 @@ def save_results(model, tfidf_feature_names, path_to_save_model, dataset, cluwor
     df_mean.to_csv(path_or_buf='{}/results.csv'.format(path_to_save_results))
 
 
-def create_embedding_models(dataset, embedding_file_path, embedding_type, datasets_path, path_to_save_model):
+def create_embedding_models(dataset, embedding_type, datasets_path,
+                            path_to_save_model, fold,
+                            embedding_dimension=300,
+                            embedding_file_path=None):
     # Create the word2vec models for each dataset
     word2vec_models = CreateEmbeddingModels(embedding_file_path=embedding_file_path,
                                             embedding_type=embedding_type,
                                             document_path=datasets_path,
                                             path_to_save_model=path_to_save_model)
-    n_words = word2vec_models.create_embedding_models(dataset)
+    n_words = word2vec_models.filter_embedding_models(dataset=dataset,
+                                                      dimension=embedding_dimension,
+                                                      fold=fold)
 
     return n_words
 
 
-def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
-                    path_to_save_results, n_threads, k, threshold, cossine_filter,
-                    has_class, class_path, n_components, algorithm_type):
+def generate_representation(training_path, word_count, path_to_save_model,
+                            path_to_save_results, n_threads, k, threshold,
+                            algorithm_type, sublinear_tf, fold, dataset, n_components=25):
     # Path to files and directories
-    embedding_file_path = """{}/{}.txt""".format(path_to_save_model, dataset)
-    dataset_file_path = """{}/{}Pre.txt""".format(datasets_path, dataset)
-    path_to_save_results = '{}/{}'.format(path_to_save_results, dataset)
+    embedding_file_path = """{path}/{dataset}_embedding_{fold}.txt""".format(path=path_to_save_model,
+                                                                             dataset=dataset,
+                                                                             fold=fold)
 
     try:
         os.mkdir('{}'.format(path_to_save_results))
     except FileExistsError:
         pass
 
+    start = timer()
     Cluwords(algorithm=algorithm_type,
              embedding_file_path=embedding_file_path,
              n_words=word_count,
              k_neighbors=k,
              threshold=threshold,
-             n_jobs=n_threads
-             )
-
-    cluwords = CluwordsTFIDF(dataset_file_path=dataset_file_path,
-                             n_words=word_count,
-                             cossine_filter=cossine_filter,
-                             path_to_save_cluwords=path_to_save_results,
-                             class_file_path=class_path,
-                             has_class=has_class)
+             n_jobs=n_threads,
+             dataset=dataset)
+    end = timer()
+    print(f'Time CluWords: {end - start}')
+    start = timer()
+    cluwords = CluwordsTFIDF(n_words=word_count,
+                             npz_path='cluwords_{dataset}.npz'.format(dataset=dataset),
+                             npz_sim_path='cluwords_sim_{dataset}.npz'.format(dataset=dataset),
+                             npz_sim_bin_path='cluwords_sim_bin_{dataset}.npz'.format(dataset=dataset),
+                             smooth_neighbors=False,
+                             sublinear_tf=sublinear_tf,
+                             n_jobs=n_threads)
+    end = timer()
+    print(f'Time CluWordsTFIDF: {end - start}')
+    start = timeit.default_timer()
     print('Computing TFIDF...')
-    cluwords_tfidf = cluwords.fit_transform()
-    # cluwords_tfidf = csr_matrix(cluwords_tfidf)  # Convert the cluwords_tfidf array matrix to a sparse cluwords
+    cluwords.fit(data=training_path,
+                 fold=fold,
+                 dataset_name=dataset,
+                 path_to_save=path_to_save_results)
+
+    cluwords_tfidf = cluwords.transform(data=training_path)
+    end = timeit.default_timer()
+    print("Cluwords generation done in {}.".format(end - start))
 
     start = timeit.default_timer()
     # Fit the NMF model
-    print("\nFitting the NMF model (Frobenius norm) with tf-idf features, "
-          "n_samples=%d and n_features=%d..."
-          % (cluwords.n_documents, cluwords.n_cluwords))
+    print("Fitting the NMF model (Frobenius norm) with tf-idf features, "
+          "n_samples={} and n_features={}...".format(cluwords.n_documents, cluwords.n_words))
     nmf = NMF(n_components=n_components,
               random_state=1,
               alpha=.1,
@@ -247,7 +267,7 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
     vocab_cluwords = cluwords.vocab_cluwords
     documents = cluwords.documents
     del cluwords
-    #Load topics
+    # Load topics
     topics = top_words(nmf, list(vocab_cluwords), 101)
 
     # Load Cluwords representation for metrics
@@ -258,9 +278,6 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
     one_hot_topics = get_one_hot_topics(topics, 101, np.array(vocab_cluwords), dataset)
     _nearest_neighbors(one_hot_topics, documents, vocab_cluwords, n_components, dataset)
     topics = remove_redundant_words(topics)
-
-    # Remove variable
-    del cluwords_tfidf
 
     # print('n_terms: {}'.format(n_cluwords))
     # print('words1: {}'.format(cluwords_vocab))
@@ -273,3 +290,4 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
                   topics=topics,
                   n_docs=n_docs
                   )
+
