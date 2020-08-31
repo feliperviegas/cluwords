@@ -4,21 +4,17 @@ This is the code for the paper:
 
 Viegas, Felipe and Canuto, Sérgio and Gomes, Christian and Luiz, Washington and Rosa, Thierson and Ribas, Sabir and Rocha, Leonardo and Gonçalves, Marcos André. CluWords: Exploiting SemanticWord Clustering Representation for Enhanced Topic Modeling.The Twelfth ACM International Conference on Web Search and Data Mining (WSDM ’19)
 
-To run this code, you need to install/download :
-- scipy
-- numpy
-- gensim
-- scikit-learn
-- [FastText](https://fasttext.cc/docs/en/english-vectors.html) (Pre-trained Word Embedding)
+Build docker container:
 
-Once installed, setup the paths in the startup file :
+```docker build -t cluwords `pwd` ```
 
-```main.py```
+Run docker container:
+
+```docker run --rm --name cluwords -v `pwd`:/cluwords -i -t cluwords /bin/bash```
 
 To run the code:
 
-```python3 main.py```
-
+```python3 main.py -h```
 
 ### Cite
 If you find this code useful in your research, please, consider citing our paper:
