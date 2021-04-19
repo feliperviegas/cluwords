@@ -221,13 +221,16 @@ def generate_topics(dataset, word_count, path_to_save_model, datasets_path,
 
     start = timeit.default_timer()
     # Fit the NMF model
-    print("\nFitting the NMF model (Frobenius norm) with tf-idf features, "
-          "n_samples=%d and n_features=%d..."
-          % (cluwords.n_documents, cluwords.n_cluwords))
+    print("\nFitting the NMF model (Frobenius norm) with tf-idf features, n_samples={docs} and n_features={feat}..."
+          .format(docs=cluwords.n_documents, feat=cluwords.n_cluwords))
+    print(f"\nNumber of components {n_components}")
+
     nmf = NMF(n_components=n_components,
+              init="nndsvd",
               random_state=1,
               alpha=.1,
-              l1_ratio=.5).fit(cluwords_tfidf)
+              l1_ratio=.5,
+              max_iter=1000).fit(cluwords_tfidf)
 
     end = timeit.default_timer()
     print("NMF done in {}.".format(end - start))

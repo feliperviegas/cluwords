@@ -40,7 +40,6 @@ class Evaluation:
 
         return n_terms, words, word_frequency, term_docs
 
-
     @staticmethod
     def count_tf_idf_repr(topics, cw_words, tf_idf_t):
         cw_frequency = {}

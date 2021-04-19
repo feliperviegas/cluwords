@@ -74,7 +74,9 @@ class CreateEmbeddingModels:
 
         # save .txt model
         file = open("""{}/{}.txt""".format(self.path_to_save_model, dataset), 'w+')
-        file.write('{0} {1}\n'.format(n_words, '300'))
+        # file.write('{0} {1}\n'.format(n_words, '300'))
+        file.write('{0} {1}\n'.format(n_words, '3072'))
+        # file.write('{0} {1}\n'.format(n_words, '3072'))
         for word_vec in words_values:
             file.write("%s\n" % word_vec)
 
