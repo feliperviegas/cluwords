@@ -1,0 +1,1 @@
+source="";topic=5; for dataset in wpp ang drop ever face info pinter trip tweets uber acm 20News; do grep "avg NPMI" "${source}/results/${dataset}/result_topic_${topic}.txt" | awk '{print $3" "$4;}'; done 
